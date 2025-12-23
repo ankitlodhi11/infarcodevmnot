@@ -66,4 +66,8 @@ stages:
         command: 'apply'
         workingDirectory: '$(workDir)'
         environmentServiceNameAzureRM: 'amit'
-
+    - task: TerraformTask@5
+      inputs:
+       provider: 'azurerm'
+       command: 'destroy'
+       environmentServiceNameAzureRM: 'amit'
