@@ -1,6 +1,6 @@
 trigger: 
-- feature/*
-- main
+  - feature/*
+  - main
 
 pool: infra
 
@@ -8,16 +8,20 @@ variables:
   workDir: '$(System.DefaultWorkingDirectory)/environments/dev'
 
 stages:
+
+# ------------------ Build Stage ------------------
 - stage: Build
   displayName: Build
   jobs:       
   - job: TerraformInitPlan
     displayName: Terraform Init and Plan Job
     steps: 
+    # Install Terraform
     - task: TerraformInstaller@1
       inputs:
         terraformVersion: 'latest'
 
+    # Terraform init
     - task: TerraformTask@5
       inputs:
         provider: 'azurerm'
@@ -28,6 +32,7 @@ stages:
         backendAzureRmContainerName: 'tfstate'
         backendAzureRmKey: 'dev.terraform.tfstate'
 
+    # Terraform plan
     - task: TerraformTask@5
       inputs:
         provider: 'azurerm'
@@ -35,6 +40,7 @@ stages:
         workingDirectory: $(workDir)
         environmentServiceNameAzureRM: 'Azure subscription 1(56de03ab-1570-40b1-bd13-5a9ca5b1e106)'
 
+# ------------------ Scanning Stage ------------------
 - stage: Scanning
   displayName: Scanning
   jobs: 
@@ -53,8 +59,9 @@ stages:
     steps:
     - task: CmdLine@2
       inputs:
-        script: 'echo Hello world'
+        script: 'tflint $(workDir)'
 
+# ------------------ Deploy Stage ------------------
 - stage: Deploy
   displayName: Deploy
   condition: eq(variables['Build.SourceBranch'], 'refs/heads/main')
@@ -74,19 +81,22 @@ stages:
     dependsOn: ManualValidation
     pool: Default
     steps:
+    # Terraform init (same backend as build)
     - task: TerraformTask@5
       inputs:
         provider: 'azurerm'
         command: 'init'
         workingDirectory: $(workDir)
         backendServiceArm: 'Azure subscription 1(56de03ab-1570-40b1-bd13-5a9ca5b1e106)'
-        backendAzureRmStorageAccountName: 'devopsinsidersstate'
+        backendAzureRmStorageAccountName: 'infrastoregeal'
         backendAzureRmContainerName: 'tfstate'
         backendAzureRmKey: 'dev.terraform.tfstate'
+
+    # Terraform apply
     - task: TerraformTask@5
       inputs:
         provider: 'azurerm'
         command: 'apply'
         workingDirectory: $(workDir)
         environmentServiceNameAzureRM: 'Azure subscription 1(56de03ab-1570-40b1-bd13-5a9ca5b1e106)'
-
+        additionalArgs: '-auto-approve'
