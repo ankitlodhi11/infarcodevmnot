@@ -37,7 +37,7 @@ stages:
   jobs: 
   - job: TFSecScanningJob
     displayName: TFSEC Scanning Wala Job
-    pool: Default
+    pool: infra
     steps:
     - task: tfsec@1
       inputs:
@@ -46,31 +46,11 @@ stages:
 
   - job: TfLintScanningJob
     displayName: TFLINT Scanning Wala Job
-    pool: Default
+    pool: infra
     steps:
     - task: CmdLine@2
       inputs:
         script: 'echo Hello world'
-
-- stage: Deploy
-  displayName: Deploy
-  condition: eq(variables['Build.SourceBranch'], 'refs/heads/main')
-  jobs: 
-  - job: ManualValidation
-    displayName: Manual Validation kardo Please
-    pool: server
-    steps:
-    - task: ManualValidation@1
-      inputs:
-        notifyUsers: 'ankitlodhi11@gmail.com'
-        approvers: 'ankitlodhi11@gmail.com'
-        instructions: 'Plan check karle pagli...'
-
-  - job: TerraformApply
-    displayName: Terraform Apply wala Job
-    dependsOn: ManualValidation
-    pool: Default
-    steps:
     - task: TerraformTask@5
       inputs:
         provider: 'azurerm'
