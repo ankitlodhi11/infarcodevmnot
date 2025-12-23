@@ -37,7 +37,6 @@ stages:
   jobs: 
   - job: TFSecScanningJob
     displayName: TFSEC Scanning Wala Job
-    pool: infra
     steps:
     - task: tfsec@1
       inputs:
@@ -46,24 +45,24 @@ stages:
 
   - job: TfLintScanningJob
     displayName: TFLINT Scanning Wala Job
-    pool: infra
+    #pool: infra
     steps:
     - task: CmdLine@2
       inputs:
         script: 'echo Hello world'
-    - task: TerraformTask@5
-      inputs:
-        provider: 'azurerm'
-        command: 'init'
-        workingDirectory: '$(workDir)'
-        backendServiceArm: 'amit'
-        backendAzureRmStorageAccountName: 'infrastoregeal'
-        backendAzureRmContainerName: 'tfstate'
-        backendAzureRmKey: 'dev.terraform.tfstate'
-    - task: TerraformTask@5
-      inputs:
-        provider: 'azurerm'
-        command: 'apply'
-        workingDirectory: '$(workDir)'
-        environmentServiceNameAzureRM: 'amit'
+    # - task: TerraformTask@5
+    #   inputs:
+    #     provider: 'azurerm'
+    #     command: 'init'
+    #     workingDirectory: '$(workDir)'
+    #     backendServiceArm: 'amit'
+    #     backendAzureRmStorageAccountName: 'infrastoregeal'
+    #     backendAzureRmContainerName: 'tfstate'
+    #     backendAzureRmKey: 'dev.terraform.tfstate'
+    # - task: TerraformTask@5
+    #   inputs:
+    #     provider: 'azurerm'
+    #     command: 'apply'
+    #     workingDirectory: '$(workDir)'
+    #     environmentServiceNameAzureRM: 'amit'
 
