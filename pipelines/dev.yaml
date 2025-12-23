@@ -1,4 +1,6 @@
-trigger: none
+trigger: 
+- feature/*
+- main
 
 pool: infra
 
@@ -6,13 +8,16 @@ variables:
   workDir: '$(System.DefaultWorkingDirectory)/environments/dev'
 
 stages:
-- stage: TerraformInit
-  displayName: Terraform Init Stage
-  jobs:
-  - job: TerraformInitJob
-    displayName: Terraform Init Job
-    steps:
-    # Terraform init only
+- stage: Build
+  displayName: Build
+  jobs:       
+  - job: TerraformInitPlan
+    displayName: Terraform Init and Plan Job
+    steps: 
+    - task: TerraformInstaller@1
+      inputs:
+        terraformVersion: 'latest'
+
     - task: TerraformTask@5
       inputs:
         provider: 'azurerm'
@@ -22,3 +27,66 @@ stages:
         backendAzureRmStorageAccountName: 'infrastoregeal'
         backendAzureRmContainerName: 'tfstate'
         backendAzureRmKey: 'dev.terraform.tfstate'
+
+    - task: TerraformTask@5
+      inputs:
+        provider: 'azurerm'
+        command: 'plan'
+        workingDirectory: '$(workDir)'
+        environmentServiceNameAzureRM: 'amit'
+
+- stage: Scanning
+  displayName: Scanning
+  jobs: 
+  - job: TFSecScanningJob
+    displayName: TFSEC Scanning Wala Job
+    pool: Default
+    steps:
+    - task: tfsec@1
+      inputs:
+        version: 'v1.26.0'
+        dir: $(workDir)
+
+  - job: TfLintScanningJob
+    displayName: TFLINT Scanning Wala Job
+    pool: Default
+    steps:
+    - task: CmdLine@2
+      inputs:
+        script: 'echo Hello world'
+
+- stage: Deploy
+  displayName: Deploy
+  condition: eq(variables['Build.SourceBranch'], 'refs/heads/main')
+  jobs: 
+  - job: ManualValidation
+    displayName: Manual Validation kardo Please
+    pool: server
+    steps:
+    - task: ManualValidation@1
+      inputs:
+        notifyUsers: 'ankitlodhi11@gmail.com'
+        approvers: 'ankitlodhi11@gmail.com'
+        instructions: 'Plan check karle pagli...'
+
+  - job: TerraformApply
+    displayName: Terraform Apply wala Job
+    dependsOn: ManualValidation
+    pool: Default
+    steps:
+    - task: TerraformTask@5
+      inputs:
+        provider: 'azurerm'
+        command: 'init'
+        workingDirectory: '$(workDir)'
+        backendServiceArm: 'amit'
+        backendAzureRmStorageAccountName: 'infrastoregeal'
+        backendAzureRmContainerName: 'tfstate'
+        backendAzureRmKey: 'dev.terraform.tfstate'
+    - task: TerraformTask@5
+      inputs:
+        provider: 'azurerm'
+        command: 'apply'
+        workingDirectory: '$(workDir)'
+        environmentServiceNameAzureRM: 'amit'
+
